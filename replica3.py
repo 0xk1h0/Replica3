@@ -21,6 +21,7 @@ from ghidra.program.model.data import PointerDataType
 from ghidra.program.model.listing import *
 from ghidra.program.model.symbol import *
 from ghidra.program.model.symbol import FlowType
+
 # from ghidra.program.model.symbol.SourceType import SourceType
 # from ghidra.program.model.symbol.SourceType import *
 from ghidra.program.model.symbol.SourceType import USER_DEFINED
@@ -92,7 +93,7 @@ def checkString(addr):
     data = getDataAt(addr)
     sym = getSymbolAt(addr)
     if data:
-        if (data.getBaseDataType() != None):
+        if data.getBaseDataType() != None:
             dataCmp = data.getBaseDataType().getName().lower()
             if ("string" == dataCmp) or ("unicode" == dataCmp):
                 return data.getValue()
@@ -100,8 +101,12 @@ def checkString(addr):
             pass
     if sym is not None:
         symCmp = str(sym).lower()
-        if symCmp.startswith("ptr_s_") or symCmp.startswith("ptr_u_") or symCmp.startswith(
-                "rep_ptr_s_") or symCmp.startswith("rep_ptr_u_"):
+        if (
+            symCmp.startswith("ptr_s_")
+            or symCmp.startswith("ptr_u_")
+            or symCmp.startswith("rep_ptr_s_")
+            or symCmp.startswith("rep_ptr_u_")
+        ):
             return str(sym)
     return None
 
@@ -157,34 +162,34 @@ def getApiInfo(function, database):
         function = function[:-1]
     if function[:-2] == "EX":
         function = function[:-2]
-    for i in database['msdn']['functions']['function']:
-        if i['name'] == function:
-            msg += 'Name: ' + i['name']
+    for i in database["msdn"]["functions"]["function"]:
+        if i["name"] == function:
+            msg += "Name: " + i["name"]
             msg += "\n"
-            msg += '\nDLL: ' + i['dll']
+            msg += "\nDLL: " + i["dll"]
             msg += "\n"
-            msg += '\nDescription: ' + FormatD(i['description'], 0)
+            msg += "\nDescription: " + FormatD(i["description"], 0)
             try:
-                argz = i['arguments']['argument']
+                argz = i["arguments"]["argument"]
             except:
                 argz = None
             if argz:
                 msg += "\n"
-                msg += '\nArguments:     '
+                msg += "\nArguments:     "
                 msg += "\n"
-                if 'dict' in str(type(argz)):
-                    msg += '\n   Name: ' + str(argz['name'])
+                if "dict" in str(type(argz)):
+                    msg += "\n   Name: " + str(argz["name"])
                     msg += "\n"
-                    msg += '   Description: ' + FormatD(argz['description'], 9)
+                    msg += "   Description: " + FormatD(argz["description"], 9)
                     msg += "\n"
-                elif 'list' in str(type(argz)):
+                elif "list" in str(type(argz)):
                     for arg in argz:
-                        msg += '\n   Name: ' + str(arg['name'])
+                        msg += "\n   Name: " + str(arg["name"])
                         msg += "\n"
-                        msg += '   Description: ' + FormatD(arg['description'], 16)
+                        msg += "   Description: " + FormatD(arg["description"], 16)
                         msg += "\n"
-            if i['returns']:
-                msg += "\n" + FormatD(i['returns'], 0)
+            if i["returns"]:
+                msg += "\n" + FormatD(i["returns"], 0)
     return msg
 
 
@@ -193,18 +198,24 @@ def findAllReferences(addr, taskMonitor):
     results = ArrayList()
     toAddr = currentProgram.getListing().getCodeUnitContaining(addr).getMinAddress()
     try:
-        ProgramMemoryUtil.loadDirectReferenceList(currentProgram, 1, toAddr, None, directReferenceList, taskMonitor)
+        ProgramMemoryUtil.loadDirectReferenceList(
+            currentProgram, 1, toAddr, None, directReferenceList, taskMonitor
+        )
     except:
         return Collections.emptyList()
     for rap in directReferenceList:
-        fromAddr = currentProgram.getListing().getCodeUnitContaining(rap.getSource()).getMinAddress()
-        if (not fromAddr in results):
+        fromAddr = (
+            currentProgram.getListing()
+            .getCodeUnitContaining(rap.getSource())
+            .getMinAddress()
+        )
+        if not fromAddr in results:
             results.add(fromAddr)
     ri = currentProgram.getReferenceManager().getReferencesTo(toAddr)
-    while (ri.hasNext()):
+    while ri.hasNext():
         r = ri.next()
         fromAddr = r.getFromAddress()
-        if (not fromAddr in results):
+        if not fromAddr in results:
             results.add(fromAddr)
     return results
 
@@ -212,7 +223,9 @@ def findAllReferences(addr, taskMonitor):
 def getWrapperFunctionName(functionName):
     if "rep_wrap" in functionName:
         wrapNumber = int(functionName.split("_")[2]) + 1
-        return "rep_wrap_" + str(wrapNumber) + "_" + "_".join(functionName.split("_")[3:])
+        return (
+            "rep_wrap_" + str(wrapNumber) + "_" + "_".join(functionName.split("_")[3:])
+        )
     else:
         return "rep_wrap_0_" + functionName
 
@@ -227,11 +240,13 @@ def recoverStackString(addr):
             return stackStr, str(maxaddr)
         stackStrPart = ""
         while value > 0:
-            stackStrPart += chr(value & 0xff)
+            stackStrPart += chr(value & 0xFF)
             value = value >> 8
         stackStr += stackStrPart
         try:
-            if (inst.getNext().getScalar(1) == None) and (inst.getNext().getNext().getScalar(1) != None):
+            if (inst.getNext().getScalar(1) == None) and (
+                inst.getNext().getNext().getScalar(1) != None
+            ):
                 inst = inst.getNext()
         except:
             pass
@@ -263,7 +278,7 @@ def getDataType(dataType, isArr=False, elm=0):
 def getDataTypeWrap(dt, isArr=False, elm=0):
     ptr = ""
     if "*" in dt:
-        ptr = " " + ('*' * dt.count("*"))
+        ptr = " " + ("*" * dt.count("*"))
     if "1" in dt:
         dt = getDataType("/byte" + ptr, isArr, elm)
     elif "2" in dt:
@@ -287,7 +302,9 @@ def fixUndefinedDataTypes():
         prt = False
         varList = []
         try:
-            tokengrp = decompinterface.decompileFunction(function, 0, ConsoleTaskMonitor())
+            tokengrp = decompinterface.decompileFunction(
+                function, 0, ConsoleTaskMonitor()
+            )
             code = tokengrp.getDecompiledFunction().getC()
             for line in code.split("\n"):
                 if line == "  \r":
@@ -305,13 +322,13 @@ def fixUndefinedDataTypes():
             inx = 0
             if "undefined" in dt:
                 for decVar in varList:
-                    
+
                     decVar = list(decVar)
                     if len(decVar) > 1:
-                    # if decVar_list > 1:
+                        # if decVar_list > 1:
                         arr = False
                         if len(decVar) == 3:
-                        # if decVar_list == 3:
+                            # if decVar_list == 3:
                             try:
                                 arr = True
                                 inx = int(decVar[2].split("[")[1].split("]")[0])
@@ -319,16 +336,25 @@ def fixUndefinedDataTypes():
                                 arr = False
                         if decVar[1].replace("*", "") == var.getName():
                             if not "undefined" in decVar[0]:
-                                if '*' in decVar[1]:
-                                    dt = getDataType("/" + decVar[0] + " " + ('*' * decVar[1].count("*")), arr, inx)
+                                if "*" in decVar[1]:
+                                    dt = getDataType(
+                                        "/"
+                                        + decVar[0]
+                                        + " "
+                                        + ("*" * decVar[1].count("*")),
+                                        arr,
+                                        inx,
+                                    )
                                 else:
                                     dt = getDataType("/" + decVar[0], arr, inx)
                             else:
-                                if '*' in decVar[1]:
+                                if "*" in decVar[1]:
                                     dtlen = decVar[0].replace("undefined", "")
                                     if dtlen == "":
                                         dtlen = "1"
-                                    dt = getDataTypeWrap(dtlen + ('*' * decVar[1].count("*")), arr, inx)
+                                    dt = getDataTypeWrap(
+                                        dtlen + ("*" * decVar[1].count("*")), arr, inx
+                                    )
                                 else:
                                     dt = getDataTypeWrap(decVar[0], arr, inx)
 
@@ -340,7 +366,14 @@ def fixUndefinedDataTypes():
                     try:
                         var.setDataType(dt, USER_DEFINED)
                         if function != None:
-                            print("[+] " + str(function.getName()) + ": " + varMsg + " -> " + str(dt))
+                            print(
+                                "[+] "
+                                + str(function.getName())
+                                + ": "
+                                + varMsg
+                                + " -> "
+                                + str(dt)
+                            )
                         else:
                             pass
                     except:
@@ -355,10 +388,14 @@ def Pack(const):
         byte_array = const["array"]
     elif const["size"] == "L":
         for val in const["array"]:
-            byte_array += list(map(lambda x: x if type(x) == int else ord(x), struct.pack("<L", val)))
+            byte_array += list(
+                map(lambda x: x if type(x) == int else ord(x), struct.pack("<L", val))
+            )
     elif const["size"] == "Q":
         for val in const["array"]:
-            byte_array += list(map(lambda x: x if type(x) == int else ord(x), struct.pack("<Q", val)))
+            byte_array += list(
+                map(lambda x: x if type(x) == int else ord(x), struct.pack("<Q", val))
+            )
     return bytes(bytearray(byte_array))
 
 
@@ -396,7 +433,9 @@ def detectUndefinedFunctions():
                 createdFunction = getFunctionAt(instAddr)
                 if createdFunction != None:
                     try:
-                        code, start, end = disasFun(createdFunction.getEntryPoint(), True)
+                        code, start, end = disasFun(
+                            createdFunction.getEntryPoint(), True
+                        )
                         minAddr, maxAddr = getFunctionStartEnd(createdFunction)
                         if maxAddr >= end:
                             print("[+] Created Function: " + "FUN_" + addressString)
@@ -416,10 +455,18 @@ def tagFunctions():
                 for tag in apiTags.keys():
                     for value in apiTags[tag]:
                         if value in str(calledFunction):
-                            tagName = "rep__" + tag + "_" + str(function.getEntryPoint()) + "_"
+                            tagName = (
+                                "rep__"
+                                + tag
+                                + "_"
+                                + str(function.getEntryPoint())
+                                + "_"
+                            )
                 if tagName == "":
                     tagName = "rep_" + str(function.getEntryPoint()) + "_"
-                if not "FUN_" in str(calledFunction) and not "rep_" in str(calledFunction):
+                if not "FUN_" in str(calledFunction) and not "rep_" in str(
+                    calledFunction
+                ):
                     functionNewName = tagName + str(calledFunction)
                     print("[+]" + str(function.getName()) + " -> " + functionNewName)
                     function.setName(functionNewName, USER_DEFINED)
@@ -440,11 +487,23 @@ def detectWrapperFunctions():
                 if FunctionName.startswith("FUN_") or FunctionName.startswith("rep"):
                     calledFunction = function.getCalledFunctions(monitor)
                     if len(calledFunction) == 1 and isWrapperFunction(function):
-                        functionNewName = getWrapperFunctionName(str(list(calledFunction)[0]))
-                        isFunctionRecursive = str(function.getName()) == str(list(calledFunction)[0])
+                        functionNewName = getWrapperFunctionName(
+                            str(list(calledFunction)[0])
+                        )
+                        isFunctionRecursive = str(function.getName()) == str(
+                            list(calledFunction)[0]
+                        )
 
-                        if str(function.getName()) != functionNewName and not isFunctionRecursive:
-                            print("[+] " + str(function.getName()) + " -> " + functionNewName)
+                        if (
+                            str(function.getName()) != functionNewName
+                            and not isFunctionRecursive
+                        ):
+                            print(
+                                "[+] "
+                                + str(function.getName())
+                                + " -> "
+                                + functionNewName
+                            )
                             FunctionRenamed = True
                             function.setName(functionNewName, USER_DEFINED)
                 function = getFunctionAfter(function)
@@ -458,33 +517,37 @@ def cleanUpDisassembly():
     bmgr = currentProgram.getBookmarkManager()
     listing = currentProgram.getListing()
     previousSet = None
-    while (True):
+    while True:
         badAddr = bmgr.getBookmarkAddresses("Error")
         bai = badAddr.getAddresses(True)
-        while (bai.hasNext()):
+        while bai.hasNext():
             ba = bai.next()
             bm = bmgr.getBookmark(ba, "Error", "Bad Instruction")
-            if (bm != None):
+            if bm != None:
                 contextReg = currentProgram.getProgramContext().getRegister("TMode")
                 baEnd = ba
-                if (listing.getCodeUnitAt(ba) != None):
+                if listing.getCodeUnitAt(ba) != None:
                     baEnd = listing.getCodeUnitAt(ba).getMaxAddress()
-                while (getDataContaining(baEnd.add(4)) != None):
+                while getDataContaining(baEnd.add(4)) != None:
                     baEnd = getDataContaining(baEnd.add(4)).getMaxAddress()
-                while (getDataContaining(ba.subtract(1)) != None):
+                while getDataContaining(ba.subtract(1)) != None:
                     ba = getDataContaining(ba.subtract(1)).getAddress()
                 listing.clearCodeUnits(ba, baEnd, False)
-                if (contextReg != None):
+                if contextReg != None:
                     paddr = listing.getInstructionBefore(ba).getAddress()
-                    if (paddr != None):
-                        rv = currentProgram.getProgramContext().getRegisterValue(contextReg, paddr)
-                        currentProgram.getProgramContext().setRegisterValue(ba, baEnd, rv)
+                    if paddr != None:
+                        rv = currentProgram.getProgramContext().getRegisterValue(
+                            contextReg, paddr
+                        )
+                        currentProgram.getProgramContext().setRegisterValue(
+                            ba, baEnd, rv
+                        )
                 bmgr.removeBookmark(bm)
         else:
             break
-        while (AutoAnalysisManager.getAnalysisManager(currentProgram).isAnalyzing()):
+        while AutoAnalysisManager.getAnalysisManager(currentProgram).isAnalyzing():
             sleep(500)
-        if (badAddr.equals(previousSet)):
+        if badAddr.equals(previousSet):
             break
         previousSet = badAddr
 
@@ -532,8 +595,10 @@ def renameFunctionsBasedOnStrRef():
                     if name != None:
                         if len(name) < 3:
                             continue
-                        name = re.sub(r'[^a-zA-Z0-9_.]+', '', name[:50])
-                        functionName = "rep_" + str(function.getEntryPoint()) + "_s_" + name
+                        name = re.sub(r"[^a-zA-Z0-9_.]+", "", name[:50])
+                        functionName = (
+                            "rep_" + str(function.getEntryPoint()) + "_s_" + name
+                        )
                         print("[+] " + function.getName() + " -> " + functionName)
                         function.setName(functionName, USER_DEFINED)
                         break
@@ -546,11 +611,23 @@ def detectCryptoConstants():
     symbolTable = currentProgram.getSymbolTable()
     for const in non_sparse_consts:
         const["byte_array"] = Pack(const)
-        found = currentProgram.getMemory().findBytes(currentProgram.getMinAddress(), const["byte_array"], None, True,
-                                                     monitor)
+        found = currentProgram.getMemory().findBytes(
+            currentProgram.getMinAddress(), const["byte_array"], None, True, monitor
+        )
         if found != None:
-            labelName = "rep_crypto_constant_" + const['algorithm'] + "_" + const['name']
-            print("[+] " + const['algorithm'] + " " + const['name'] + " 0x" + str(found) + " -> " + labelName)
+            labelName = (
+                "rep_crypto_constant_" + const["algorithm"] + "_" + const["name"]
+            )
+            print(
+                "[+] "
+                + const["algorithm"]
+                + " "
+                + const["name"]
+                + " 0x"
+                + str(found)
+                + " -> "
+                + labelName
+            )
             symbolTable.createLabel(found, labelName, USER_DEFINED)
 
     listing = currentProgram.getListing()
@@ -563,14 +640,33 @@ def detectCryptoConstants():
                 for val in const["array"][1:]:
                     inst = instruction.next()
                     if not str(val).upper() == str(inst.getScalar(1)).upper():
-                        if const['name'] == "SHA1_H" and const['array'][-1]:
+                        if const["name"] == "SHA1_H" and const["array"][-1]:
                             labelName = "rep_crypto_constant_MD5_initstate"
-                            print("[+] " + "MD5_initstate" + " 0x" + str(labeladdr) + " -> " + labelName)
+                            print(
+                                "[+] "
+                                + "MD5_initstate"
+                                + " 0x"
+                                + str(labeladdr)
+                                + " -> "
+                                + labelName
+                            )
                             symbolTable.createLabel(labeladdr, labelName, USER_DEFINED)
                         break
                 else:
-                    labelName = "rep_crypto_constant_" + const['algorithm'] + "_" + const['name']
-                    print("[+] " + const['name'] + " 0x" + str(labeladdr) + " -> " + labelName)
+                    labelName = (
+                        "rep_crypto_constant_"
+                        + const["algorithm"]
+                        + "_"
+                        + const["name"]
+                    )
+                    print(
+                        "[+] "
+                        + const["name"]
+                        + " 0x"
+                        + str(labeladdr)
+                        + " -> "
+                        + labelName
+                    )
                     symbolTable.createLabel(labeladdr, labelName, USER_DEFINED)
 
 
@@ -583,8 +679,11 @@ def detectStackStrings():
         instStr = str(inst.getScalar(1)).replace("0x", "")
         if not instStr == "None" and (len(instStr) % 2) == 0 and not "-" in instStr:
             stackStr, maxAddr = recoverStackString(inst.address)
-            FilteredStackStr = re.sub(r'[^a-zA-Z0-9 .,\-\*\/\[\]\{\}\!\@\#\$\%\^\&\(\)\=\~\:\"\'\\\+\?\>\<\`\_\;]+', '',
-                                      stackStr)
+            FilteredStackStr = re.sub(
+                r"[^a-zA-Z0-9 .,\-\*\/\[\]\{\}\!\@\#\$\%\^\&\(\)\=\~\:\"\'\\\+\?\>\<\`\_\;]+",
+                "",
+                stackStr,
+            )
             if len(FilteredStackStr) > 4 and FilteredStackStr == stackStr:
                 print("[+] " + str(inst.address) + " " + stackStr)
                 codeUnit = programList.getCodeUnitAt(inst.address)
@@ -604,11 +703,17 @@ def fixUndefinedData():
     executable_set = memory_manager.getExecuteSet()
     addr_view = address_ranges.xor(executable_set)
     for section in addr_view:
-        new_view = addr_factory.getAddressSet(section.getMinAddress(), section.getMaxAddress())
+        new_view = addr_factory.getAddressSet(
+            section.getMinAddress(), section.getMaxAddress()
+        )
         data_sections.append(new_view)
 
     for section in data_sections:
-        print('[+] Section {} - {}'.format(section.getMinAddress(), section.getMaxAddress()))
+        print(
+            "[+] Section {} - {}".format(
+                section.getMinAddress(), section.getMaxAddress()
+            )
+        )
         startAddr = section.getMinAddress()
         endAddr = section.getMaxAddress()
 
@@ -616,13 +721,16 @@ def fixUndefinedData():
             try:
                 addr = toAddr(addr)
                 if getSymbolAt(addr).getSymbolType().toString() == "Label" and (
-                        getByte(addr) > 31 and getByte(addr) < 128):
+                    getByte(addr) > 31 and getByte(addr) < 128
+                ):
                     enc = 1
                     while True:
                         addrPlus = toAddr(addrToInt(addr) + enc)
                         addrByte = getByte(addrPlus)
-                        if not (((addrByte > 31 and addrByte < 128) or addrByte == 0) and getSymbolAt(
-                                addrPlus) == None):
+                        if not (
+                            ((addrByte > 31 and addrByte < 128) or addrByte == 0)
+                            and getSymbolAt(addrPlus) == None
+                        ):
                             break
                         enc += 1
                     if enc >= 4:
@@ -665,7 +773,7 @@ def bookMarkStringHints():
     listing = currentProgram.getListing()
     monitor.setMessage("BookMarking Intersting Strings [Hints]")
     dataIterator = listing.getDefinedData(True)
-    while (dataIterator.hasNext() and not monitor.isCancelled()):
+    while dataIterator.hasNext() and not monitor.isCancelled():
         data = dataIterator.next()
         strType = data.getDataType().getName().lower()
         matchStr = str(data.getValue())
@@ -685,17 +793,29 @@ def bookMarkStringHints():
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
 
-        choices = askChoices("Choices", "Please choose from Analysis Options.",
-                             ArrayList([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
-                             ArrayList(["Disassemble missed  instructions", "Detect and fix missed  functions",
-                              "Fix undefined datatypes", "Set MSDN API info as comments",
-                              "Tag Functions based on API calls", "Detect and mark wrapper functions",
-                              "Fix undefined data and strings", "Detect and label crypto constants",
-                              "Detect and comment stack strings", "Rename Functions Based on string references",
-                              "Bookmark String Hints"]))
+        choices = askChoices(
+            "Choices",
+            "Please choose from Analysis Options.",
+            ArrayList([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
+            ArrayList(
+                [
+                    "Disassemble missed  instructions",
+                    "Detect and fix missed  functions",
+                    "Fix undefined datatypes",
+                    "Set MSDN API info as comments",
+                    "Tag Functions based on API calls",
+                    "Detect and mark wrapper functions",
+                    "Fix undefined data and strings",
+                    "Detect and label crypto constants",
+                    "Detect and comment stack strings",
+                    "Rename Functions Based on string references",
+                    "Bookmark String Hints",
+                ]
+            ),
+        )
 
         if 0 in choices:
             fixMissingDisassembly()
