@@ -53,5 +53,21 @@ I converted the REPLICA script (https://github.com/reb311ion/replica) to work in
 
 
 ## Installation:
+## Install
 
-Copy the repository files into any of `ghidra_scripts` directories and extract `db.7z`, directories can be found from `Window->Script Manager->Script Directories`
+1. Download and install [Ghidra](https://github.com/NationalSecurityAgency/ghidra/releases) to a desired location.
+
+1. Set the `GHIDRA_INSTALL_DIR` environment variable to point to the directory where Ghidra is installed.
+
+1. Install pyhidra.
+
+```console
+> pip install pyhidra
+```
+### Enabling the Ghidra User Interface Plugin
+
+1. Run `pyhidraw` from a terminal of your choice.
+2. Open the Code Browser Tool.
+3. From the `File` toolbar menu, select `Configure...`.
+4. From the menu in the image below select `configure` under `Experimental`.
+5. Copy the repository files into any of `ghidra_scripts` directories and extract `db.7z`, directories can be found from `Window->Script Manager->Script Directories`
