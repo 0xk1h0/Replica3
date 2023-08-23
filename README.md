@@ -1,10 +1,9 @@
-# replica3
 <h1 align="center"> REPLICA3 </h1>
 <div align="center">
 <!--  <img src="logo.png" alt="Example" width="300" height="150">  -->
   <p>
   <strong>
-  TAME THE DRAGON
+  TAME THE PYHIDRA
   </strong>
  </p>
 </div>
@@ -24,9 +23,9 @@
 
 ## NOTIFICATION:
 
-I converted the REPLICA script (https://github.com/reb311ion/replica) to work in the Pyhdira environment. Thanks reb311ion! 
+I converted the REPLICA script (https://github.com/reb311ion/replica) to work in the "Pyhdira" (Python3) environment. Thanks reb311ion! 
 
-## ✨Features:
+## Features:
 
 - ⚡ Disassemble missed instructions - Define code that Ghidra's auto analysis missed
 - ⚡ Detect and fix missed functions - Define functions that Ghidra's auto analysis missed
@@ -53,6 +52,6 @@ I converted the REPLICA script (https://github.com/reb311ion/replica) to work in
 - [Python3](https://www.python.org/downloads/)
 
 
-## 🚀 Installation:
+## Installation:
 
 Copy the repository files into any of `ghidra_scripts` directories and extract `db.7z`, directories can be found from `Window->Script Manager->Script Directories`
