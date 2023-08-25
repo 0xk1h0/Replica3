@@ -53,7 +53,6 @@ I converted the REPLICA script (https://github.com/reb311ion/replica) to work in
 
 
 ## Installation:
-## Install
 
 1. Download and install [Ghidra](https://github.com/NationalSecurityAgency/ghidra/releases) to a desired location.
 
